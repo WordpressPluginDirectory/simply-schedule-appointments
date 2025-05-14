@@ -309,7 +309,10 @@ class SSA_Templates {
 		if ( is_object( $vars['Appointment']['date_timezone'] ) ) {
 			$vars['Appointment']['date_timezone'] = $vars['Appointment']['date_timezone']->getName();
 		}
-		
+
+		// Include booking page variables
+		$meta = $this->plugin->appointment_model->get_metas( (int)$vars['appointment_id'], array( 'booking_url', 'booking_post_id', 'booking_title', 'cancelation_note', 'canceled_by_user_id', 'rescheduling_note', 'rescheduled_by_user_id', 'mepr_membership_id' ) );
+
 		$vars['booking_url'] = isset( $meta['booking_url'] ) ? $meta['booking_url'] : null;
 		$vars['booking_post_id'] = isset( $meta['booking_post_id'] ) ? $meta['booking_post_id'] : null;
 		$vars['booking_title'] = isset( $meta['booking_title'] ) ? $meta['booking_title'] : null;
@@ -318,6 +321,7 @@ class SSA_Templates {
 		$vars['rescheduling_note'] = isset( $meta['rescheduling_note'] ) ? $meta['rescheduling_note'] : null;
 		$vars['rescheduled_by_name'] = isset( $meta['rescheduled_by_user_id'] ) ? $this->get_user_name_from_user_id( $meta['rescheduled_by_user_id'] ) :  null;
 		$vars['location'] = isset($vars['Appointment']['web_meeting_url'] ) ? $vars['Appointment']['web_meeting_url'] : '';
+		$vars['mepr_membership_title'] = isset( $meta['mepr_membership_id'] ) ? $this->get_mepr_membership_title( $meta['mepr_membership_id'] ) :  null;
 
 		// List of attendees
 		$vars['attendees_list'] = '';
@@ -371,7 +375,7 @@ class SSA_Templates {
 		try {
 			$rendered_template = $twig->render( 'template', $vars );
 		} catch ( Exception $e ) {
-			return $e;
+			return $this->generate_twig_error_summary($e, $template_string);
 		}
 		
 		// need to unescape the html so PHP can process it in wp_kses_post
@@ -379,6 +383,25 @@ class SSA_Templates {
 		$rendered_template = html_entity_decode($rendered_template);
 		
 		return wp_kses_post($rendered_template);
+	}
+
+	protected function get_template_line_at_error( $line = null, $template_string = null ) {
+		if( empty( $line ) || empty( $template_string ) ) {
+			return;
+		}
+		$line = (int) $line - 1; // Convert to 0-indexed
+		$lines = explode("\n", $template_string);
+		return isset($lines[ $line ]) ? $lines[ $line ] : null;
+	}
+
+	protected function generate_twig_error_summary(Exception $e, $template_string) {
+		$msg = '<p>Error on Line: ' . $e->getTemplateLine() . "</p>";
+		$msg .= "<p>" . $e->getRawMessage() . "</p>";
+		$affected_line = $this->get_template_line_at_error( $e->getTemplateLine(), $template_string );
+		if( $affected_line ) {
+			$msg .= "<p>Check this part of your template: <p><pre>" . $affected_line . "</pre>";
+		}
+		return $msg;
 	}
 	
 	
@@ -667,6 +690,23 @@ class SSA_Templates {
 
 		return __( 'A logged out user', 'simply-schedule-appointments' ); // Just in case but we shouldn't really reach this far
 		
+	}
+
+	/**
+	 * Memberpress Integration
+	 *
+	 * @param int $id
+	 * @return string|null
+	 */
+	public function get_mepr_membership_title( $id ) {
+		if ( empty( $id ) || ! class_exists( 'SSA_Mepr_Membership' ) || ! class_exists( 'MeprProduct' ) ) {
+			return;
+		}
+		$membership = new SSA_Mepr_Membership( $id );
+		if ( empty( $membership->exists() ) ) {
+			return;
+		}
+		return $membership->get_title();
 	}
 
 

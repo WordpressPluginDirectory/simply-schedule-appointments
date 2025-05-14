@@ -73,6 +73,8 @@ class SSA_Bootstrap {
 				$desired_protocol = 'https';
 			} elseif ( !empty( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ) {
 				$desired_protocol = 'https';
+			} elseif ( !empty( $_SERVER['REQUEST_SCHEME'] ) ) {
+				$desired_protocol = strtolower( $_SERVER['REQUEST_SCHEME'] );
 			} elseif ( !empty( $_SERVER['protocol'] ) ) {
 				$desired_protocol = strtolower( substr( $_SERVER["SERVER_PROTOCOL"], 0, 5 ) ) == 'https' ? 'https' : 'http';
 			}
@@ -131,7 +133,7 @@ class SSA_Bootstrap {
 			$admin_static_url = $this->plugin->url( 'admin-app/public/static' );
 		}
 
-		$booking_static_url = $this->plugin->url( 'booking-app/dist/static' );
+		$booking_static_url = $this->plugin->url( 'booking-app-new/dist/static' );
 		if ( defined( 'WP_SITEURL' ) && WP_SITEURL === 'http://localhost:8080' ) {
 			if ( defined( 'SSA_BOOKING_APP_NEW' ) && SSA_BOOKING_APP_NEW ) {
 				$booking_static_url = $this->plugin->url( 'booking-app/public/static' );

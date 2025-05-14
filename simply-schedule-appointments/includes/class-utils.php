@@ -122,6 +122,35 @@ class SSA_Utils {
 		return array_keys( $arr ) !== range( 0, count( $arr ) - 1 );
 	}
 
+	public static function arrays_assoc_are_equal( $a, $b ) {
+		if ( ! is_array( $a ) || ! is_array( $b ) ) {
+			return false;
+		}
+
+		if ( count( $a ) !== count( $b ) ) {
+			return false;
+		}
+
+		foreach ( $a as $key => $value ) {
+			if ( ! array_key_exists( $key, $b ) ) {
+					return false;
+			}
+			if ( is_array( $value ) ) {
+				if ( ! is_array( $b[ $key ] ) ) {
+					return false;
+				}
+				if ( ! self::arrays_assoc_are_equal( $value, $b[ $key ] ) ) {
+					return false;
+				}
+			} else {
+				if ( $value !== $b[ $key ] ) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
 	public static function array_key( $array, $key ) {
 		if ( isset( $array[ $key ] ) ) {
 			return $array[ $key ];
@@ -274,47 +303,76 @@ class SSA_Utils {
 	}
 	
 	public static function translate_formatted_date( $formatted_date ) {
-		$should_reset = false;
-		unload_textdomain( 'simply-schedule-appointments', true );
+		$translations = array();
 		
 		if( !empty( ssa()->translation->programmatic_locale ) && is_string( ssa()->translation->programmatic_locale ) ){
 			$mo_file = WP_LANG_DIR . '/' . ssa()->translation->programmatic_locale . '.mo';
+			if( ! file_exists( $mo_file ) ){
+				// if the WP core language file doesn't exist, try the plugin language file
+				$mo_file = WP_LANG_DIR . '/plugins/simply-schedule-appointments-' . ssa()->translation->programmatic_locale . '.mo';
+			}
 			if ( file_exists( $mo_file ) ) {
-				$should_reset = true;
-				// use WP core translations for months, assumed always more complete than SSA translations
-				load_textdomain( 'simply-schedule-appointments', $mo_file );
+				// Make sure the MO class is available.
+				if ( ! class_exists( 'MO' ) ) {
+					require_once( ABSPATH . WPINC . '/l10n.php' );
+				}
 
+				// Instantiate a new MO object.
+				$mo = new MO();
+				// Load your specific .mo file.
+				// (Replace '/path/to/your/file.mo' with the correct path.)
+				if ( $mo->import_from_file( $mo_file ) ) {
+
+					// Now translate the strings using the loaded .mo file.
+					$translations = array(
+						'January'   => $mo->translate( 'January' ),
+						'February'  => $mo->translate( 'February' ),
+						'March'     => $mo->translate( 'March' ),
+						'April'     => $mo->translate( 'April' ),
+						'May'       => $mo->translate( 'May' ),
+						'June'      => $mo->translate( 'June' ),
+						'July'      => $mo->translate( 'July' ),
+						'August'    => $mo->translate( 'August' ),
+						'September' => $mo->translate( 'September' ),
+						'October'   => $mo->translate( 'October' ),
+						'November'  => $mo->translate( 'November' ),
+						'December'  => $mo->translate( 'December' ),
+
+						'Monday'    => $mo->translate( 'Monday' ),
+						'Tuesday'   => $mo->translate( 'Tuesday' ),
+						'Wednesday' => $mo->translate( 'Wednesday' ),
+						'Thursday'  => $mo->translate( 'Thursday' ),
+						'Friday'    => $mo->translate( 'Friday' ),
+						'Saturday'  => $mo->translate( 'Saturday' ),
+						'Sunday'    => $mo->translate( 'Sunday' ),
+					);
+				}
 			}
 		}
 		
-		$translations = array(
-			'January' => __( 'January', 'simply-schedule-appointments' ),
-			'February' => __( 'February', 'simply-schedule-appointments' ),
-			'March' => __( 'March', 'simply-schedule-appointments' ),
-			'April' => __( 'April', 'simply-schedule-appointments' ),
-			'May' => __( 'May', 'simply-schedule-appointments' ),
-			'June' => __( 'June', 'simply-schedule-appointments' ),
-			'July' => __( 'July', 'simply-schedule-appointments' ),
-			'August' => __( 'August', 'simply-schedule-appointments' ),
-			'September' => __( 'September', 'simply-schedule-appointments' ),
-			'October' => __( 'October', 'simply-schedule-appointments' ),
-			'November' => __( 'November', 'simply-schedule-appointments' ),
-			'December' => __( 'December', 'simply-schedule-appointments' ),
-
-			'Monday' => __( 'Monday', 'simply-schedule-appointments' ),
-			'Tuesday' => __( 'Tuesday', 'simply-schedule-appointments' ),
-			'Wednesday' => __( 'Wednesday', 'simply-schedule-appointments' ),
-			'Thursday' => __( 'Thursday', 'simply-schedule-appointments' ),
-			'Friday' => __( 'Friday', 'simply-schedule-appointments' ),
-			'Saturday' => __( 'Saturday', 'simply-schedule-appointments' ),
-			'Sunday' => __( 'Sunday', 'simply-schedule-appointments' ),
-		);
-		
-		
-		if( $should_reset ){
-			// this should unload the WP core .mo translation, and load the SSA .mo file instead
-			unload_textdomain( 'simply-schedule-appointments', true );
-			load_plugin_textdomain( 'simply-schedule-appointments', false, dirname( ssa()->basename ) . '/languages' );
+		if(empty($translations)){
+			$translations = array(
+				'January' => __( 'January' ),
+				'February' => __( 'February' ),
+				'March' => __( 'March' ),
+				'April' => __( 'April' ),
+				'May' => __( 'May' ),
+				'June' => __( 'June' ),
+				'July' => __( 'July' ),
+				'August' => __( 'August' ),
+				'September' => __( 'September' ),
+				'October' => __( 'October' ),
+				'November' => __( 'November' ),
+				'December' => __( 'December' ),
+	
+				'Monday' => __( 'Monday' ),
+				'Tuesday' => __( 'Tuesday' ),
+				'Wednesday' => __( 'Wednesday' ),
+				'Thursday' => __( 'Thursday' ),
+				'Friday' => __( 'Friday' ),
+				'Saturday' => __( 'Saturday' ),
+				'Sunday' => __( 'Sunday' ),
+			);
 		}
 		
 		return str_replace( array_keys( $translations ), array_values( $translations ), $formatted_date );
@@ -415,6 +473,15 @@ class SSA_Utils {
 	    $php_format = strtr($moment_date_format, $replacements);
 
 	    return $php_format;
+	}
+
+	public function get_formatted_date( $date, $appointment_type_id = 0 ){
+		$local_date = $this->get_datetime_as_local_datetime( $date, $appointment_type_id );
+		$format 		= self::get_localized_date_format_from_settings();
+		$format			= self::localize_default_date_strings( $format ) . ' (T)';
+		$value 			= $local_date->format( $format );
+		$value 			= self::translate_formatted_date( $value );
+		return $value;
 	}
 
 	/**
@@ -574,7 +641,7 @@ function ssa_function_exists( $function = '' ) {
  * @param string $hook  Required
  * @return bool|null
  */
-function ssa_has_scheduled_action( $hook = '' ) {
+function ssa_has_scheduled_action( $hook = '', $args = array() ) {
 
 	if ( empty( $hook ) ) {
 		return;
@@ -589,7 +656,7 @@ function ssa_has_scheduled_action( $hook = '' ) {
 	}
 
 	try {
-		return as_has_scheduled_action( $hook );
+		return as_has_scheduled_action( $hook, $args );
 
 	} catch( \Exception $e ) {
 		$var = $e->getMessage();
@@ -933,13 +1000,8 @@ function ssa_get_stack_trace() {
 	return $trace;
 }
 
-function ssa_is_new_booking_app() {
-	$developer_settings = ssa()->developer_settings->get();
-	return ! empty( $developer_settings ) && empty( $developer_settings['old_booking_app'] );
-}
-
 function ssa_should_render_booking_flow() {
-	return ssa()->settings_installed->is_installed( 'booking_flows' ) && ssa_is_new_booking_app() ? 1 : 0;
+	return ssa()->settings_installed->is_installed( 'booking_flows' ) ? 1 : 0;
 }
 
 /**
@@ -954,4 +1016,36 @@ function ssa_get_recipient_type_for_recipients_array ( array $recipients ) {
 		return 'staff';
 	}
 	return  'customer';
+}
+
+/**
+ * Build current page URL without query parameters
+ *
+ * @return string
+ */
+function ssa_get_current_page_url() {
+	global $wp;
+	return home_url($wp->request);
+}
+
+/**
+ * Sanitizes the accent color input.
+ *
+ * @param string $color The input color string.
+ * @return string|null The sanitized color or null if the input is invalid.
+ */
+function ssa_sanitize_color_input($color) {
+    $hex_pattern = '/^[a-fA-F0-9]+$/';
+
+    $rgba_pattern = '/^rgba\(\d{1,3},\d{1,3},\d{1,3},(?:0|1|0?\.\d+)\)$/i';
+
+    if (preg_match($hex_pattern, $color) && in_array(strlen($color), [6, 3])) {
+        return strtolower($color);
+    }
+
+    if (preg_match($rgba_pattern, $color)) {
+        return $color;
+    }
+
+    return null;
 }

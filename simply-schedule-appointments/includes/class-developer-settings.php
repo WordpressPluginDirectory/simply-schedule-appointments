@@ -78,12 +78,6 @@ class SSA_Developer_Settings extends SSA_Settings_Schema {
 				),
 				// Beta Features
 
-				// Old Booking App V1
-				'old_booking_app' => array(
-					'name' => 'old_booking_app',
-					'default_value' => false
-				),
-
 				'quick_connect_gcal_mode' => array (
 					'name' => 'quick_connect_gcal_mode',
 					'default_value' => false,
@@ -223,14 +217,5 @@ class SSA_Developer_Settings extends SSA_Settings_Schema {
 		}
 
 		$this->plugin->availability_cache_invalidation->invalidate_everything();
-	}
-
-	public function is_in_dev_quick_connect_gcal_mode(){
-		$settings = $this->get();
-		
-		if( empty($settings['quick_connect_gcal_mode'] ) ) {
-			return false;
-		}
-		return true;
 	}
 }

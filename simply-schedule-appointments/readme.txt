@@ -3,8 +3,8 @@ Contributors:      croixhaug, nataliemac, simplyscheduleappointments
 Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
-Tested up to:      6.7
-Stable tag:        1.6.7.70
+Tested up to:      6.8
+Stable tag:        1.6.8.26
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -13,7 +13,7 @@ Unlimited appointments, booking calendars, and notifications. Powerful appointme
 
 == Description ==
 
-**Simply Schedule Appointments® is an easy-to-use WordPress appointment booking plugin.** It's an automated appointment booking system loved by 40,000+ businesses, with a 5-star review average.
+**Simply Schedule Appointments® is an easy-to-use WordPress appointment booking plugin.** It's an automated appointment booking system loved by 60,000+ businesses, with a 5-star review average.
 
 The Simply Schedule Appointments booking calendars are easy and fast to set up. And enjoyable for your customers and clients to book and schedule appointments. **You can set up the appointment scheduling calendars to take your first booking in less than 5 minutes!**
 
@@ -25,10 +25,10 @@ Features included with the Simply Schedule Appointments Free Basic Edition for b
 
 * [Unlimited Booking Calendars](https://simplyscheduleappointments.com/guides/appointment-type-settings/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=unlimited-booking-calendars) and [Customizable Notifications](https://simplyscheduleappointments.com/guides/email-notifications/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=customizable-notifications)
 * Use [Advanced Scheduling Options](https://simplyscheduleappointments.com/guides/advanced-scheduling-options/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=advanced-scheduling-options) and [Blackout Dates](https://simplyscheduleappointments.com/guides/blackout-dates/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=blackout-dates) to highly tailor your schedule
-* Embed the appointment booking calendars using the Block editor, [Elementor widgets](https://simplyscheduleappointments.com/elementor-appointment-booking/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=elementor), [Beaver Builder modules](https://simplyscheduleappointments.com/beaver-builder-appointment-scheduling/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=beaver-builder), and [Divi modules](https://simplyscheduleappointments.com/integrations/divi-booking-widgets/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=divi)
+* Embed the appointment booking calendars using the Block Editor, [Elementor widgets](https://simplyscheduleappointments.com/elementor-appointment-booking/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=elementor), [Beaver Builder modules](https://simplyscheduleappointments.com/beaver-builder-appointment-scheduling/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=beaver-builder), and [Divi modules](https://simplyscheduleappointments.com/integrations/divi-booking-widgets/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=divi)
 * [Style and Customize the Booking Calendars](https://simplyscheduleappointments.com/guides/custom-styles?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=custom-styles) to match your brand and website
 * [Translation-ready](https://simplyscheduleappointments.com/guides/translating-simply-schedule-appointments/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=translating-ssa) - including Spanish, German, French, and more!
-* Deeply connected with WordPress including integrations for the [The Events Calendar](https://simplyscheduleappointments.com/guides/the-events-calendar-setup/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=the-events-calendar) plugin, [WP Fusion Automations](https://simplyscheduleappointments.com/guides/wp-fusion-automations/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=wp-fusion), and more!
+* Deeply connected with WordPress, including integrations for the [The Events Calendar](https://simplyscheduleappointments.com/guides/the-events-calendar-setup/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=the-events-calendar) plugin, [WP Fusion Automations](https://simplyscheduleappointments.com/guides/wp-fusion-automations/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=wp-fusion), and more!
 
 Features included with the Simply Schedule Appointments Paid Premium Editions for booking appointments:
 
@@ -237,73 +237,74 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
-== 1.6.7.70 - 2024-11-26 ==
+== 1.6.8.24 - 2025-04-29 ==
 
 = Fixes =
 
-- Bug fix: prevent BreakDance plugin from loading home page on the edit URL
+- Improve twilio error handling
 
-== 1.6.7.68 - 2024-11-19 ==
+== 1.6.8.22 - 2025-04-22 ==
+
+= Fixes =
+
+- Refactor revision handling: improve action validation and prevent PHP warning
+- Refactor bulk_delete call and remove unnecessary action_title check i…
+- always validate GCAL access token against API to avoid any time misconfiguration
+
+== 1.6.8.21 - 2025-04-15 ==
+
+= Fixes =
+
+- Fix ssa fails to handle stripe declined cards
+
+== 1.6.8.19 - 2025-04-09 ==
+
+= Fixes =
+
+- Stripe logo/icon missing in Stripe + SSA integration
+- Translations in the notifications are not working
+
+== 1.6.8.15 - 2025-03-26 ==
+
+= Fixes =
+
+- Fix foxy select component to pick up the pre-selected value on mount
+- Appointment Page option missing from General Settings on some hosting solutions
+- Improve error handling in the booking app
+- Improve gravity forms redirect handling
 
 = Features and Improvements =
 
-- Prepare for deprecating the old booking app
+- Introduce appointment no show status
 
-== 1.6.7.67 - 2024-11-12 ==
-
-= Fixes =
-
-- "Manage License" Button goes missing after we remove the license
-- Europe/Kyiv causes a fatal error on specific PHP versions with outdated timezonedb
-
-== 1.6.7.65 - 2024-11-05 ==
+== 1.6.8.11 - 2025-03-11 ==
 
 = Fixes =
 
-- Ticket: Timeslots allowing for multiple bookings (without Capacity/Resources or other settings enabled)
-- Ticket: Resources double booked
+- Fix the custom CSS input alignment with the formatted colored code preview
+- Responsive Refund Policy Field in Booking Form
+- Add display condition logic for error notices based on user roles
+
+== 1.6.8.9 - 2025-03-04 ==
+
+= Fixes =
+
+- Avoid fatal error when access token is missing but error notice was set
 
 = Features and Improvements =
 
-- Support booking with Gravity Wiz - GS Product Config
+- Introduce Opt-in to receiving notifications option on booking
 
-== 1.6.7.61 - 2024-10-23 ==
-
-= Fixes =
-
-- Avoid error when inserting the Google Calendar event in a revision
-- Fix select component disabled state reactivity
-- Fix team member capability affecting blackout dates
-- Fix deleting webhooks results in switching to edit mode.
-
-== 1.6.7.57 - 2024-10-03 ==
+== 1.6.8.7 - 2025-02-25 ==
 
 = Fixes =
 
-- Add Euro Support for Alipay
-- Cascade delete queued notifications following an appointment getting deleted.
-
-== 1.6.7.55 - 2024-09-24 ==
-
-= Fixes =
-
-- WPscan follow-up security fix
-- Fix Basic Edition new customer Information fields being undefined
-- Fix appointment schedule for blocked business hours
-
-== 1.6.7.53 - 2024-09-17 ==
-
-= Fixes =
-
-- Space before and after the Subscribe to Calendar link when added to a Doc/Notepad
-- Changing team member settings in Appointment type, bumps the Capacity to 100,000 🐞
-
-== 1.6.7.50 - 2024-09-10 ==
-
-= Fixes =
-
-- Fixes around cancellation and rescheduling notes
-- Prevent assigning Team Member outside of availability
+- Fix error while booking identical resources with individual and group capacity
+- Enhance accessibility by adding aria-hidden span for day date in Day.vue
+- Add snackbar notification for dev settings save confirmation
+- UI bug with Booking Flow dropdown - overlap issues
+- Refactor receipt email handling in Stripe payment arguments
+- Translate default customer information keys
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

@@ -22,6 +22,8 @@ class SSA_Error_Notices {
 	protected $plugin = null;
 	protected $scan_interval_transient_key = 'ssa/notices/error/scan_interval';
 
+	public array $error_notices_array;
+
 
 	/**
 	 * Constructor.
@@ -52,6 +54,7 @@ class SSA_Error_Notices {
 		$this->check_for_aiowps_6g_block_query();
 		$this->check_perfmatters_lazy_loading_settings();
 		$this->check_gcal_missing_refresh_token();
+		$this->confirm_ssa_gets_gcal_events();
 
 	}
 	
@@ -87,8 +90,13 @@ class SSA_Error_Notices {
 			if( ! empty( $schema[ $key ]['callback'] ) && ! empty( $schema[ $key ]['id'] ) ) {
 
 				$callback = $schema[ $key ]['callback'];
-				$id = $schema[ $key ]['id'];
-				call_user_func( array( $this, $callback), $id );
+				$id = $key;
+				$params = ( is_array( $value ) && ! empty( $value ) ) ? $value : array();
+
+				call_user_func( array( $this, $callback), [
+					'id' => $id,
+					'params' => $params
+				]);
 			}
 		}
 		// Return a fresh array of error notices since some may have been deleted after running the callbacks
@@ -195,9 +203,40 @@ class SSA_Error_Notices {
 				$this->delete_error_notice( $key );
 				continue;
 			}
+			/**
+			 * Check if the error notice should be hidden
+			 * If the condition is not met, we skip this error notice from being sent to the frontend
+			 */
+			if( ! $this->is_display_condition_met( ['id' => $key, 'value' => $value], $schema ) ){
+				continue;
+			}
 			array_push( $output, $schema[ $key ] );
 		}
 		return $output;
+	}
+
+	/**
+	 * Check if the error notice should be hidden
+	 *
+	 * @since  6.3.1
+	 * 
+	 * @param string $error_id
+	 * @return bool
+	 */
+	public function is_display_condition_met( $params = [], $schema = array() ){
+		if( empty( $schema ) ){
+			$schema = $this->get_schema();
+		}
+		if( ! isset( $schema[ $params['id'] ]['display_condition'] ) ){
+			return true; // No condition to check
+		}
+
+		$display_condition = $schema[ $params['id'] ]['display_condition'];
+		$value = ( isset( $params['value']) && is_array( $params['value'] ) ) ? $params['value'] : array();
+		return call_user_func( array( $this, $display_condition), [
+			'id' => $params['id'],
+			'value' => $value
+		]);
 	}
 
 	/**
@@ -208,7 +247,27 @@ class SSA_Error_Notices {
 	 * @return array
 	 */
 	public function fetch_error_notices_ids(){
-		return get_option( 'ssa_error_notices', array() );
+		if( ! isset( $this->error_notices_array ) ){
+			$this->error_notices_array = get_option( 'ssa_error_notices', array() );
+		}
+		return $this->error_notices_array;
+	}
+
+	public function has_errors_for_staff_id( $staff_id ) {
+		$error_notices_ids = $this->fetch_error_notices_ids();
+		$staff_id = (int) $staff_id;
+		$errors = array();
+		foreach ( $error_notices_ids as $error_id => $params ) {
+			if ( ! empty( $params['staff_id'] ) && $staff_id === (int) $params['staff_id'] ) {
+				$errors[ $error_id ] = $params;
+			}
+		}
+		return $errors;
+	}
+
+	private function update_option( $error_notices_ids = array() ) {
+		$this->error_notices_array = $error_notices_ids;
+		return update_option( 'ssa_error_notices', $error_notices_ids );
 	}
 
 	/**
@@ -217,9 +276,10 @@ class SSA_Error_Notices {
 	 * @since  6.3.1
 	 * 
 	 * @param string $error_id
+	 * @param array $params
 	 * @return int|void
 	 */
-	public function add_error_notice( $error_id = '' ) {
+	public function add_error_notice( $error_id = '', $params = array() ){
 
 		if( empty( $error_id ) ) {
 				return;
@@ -236,8 +296,40 @@ class SSA_Error_Notices {
 
 		if ( ! isset( $error_notices_ids[ $error_id ] ) ) {
 
-			$error_notices_ids[ $error_id ] = true;
-			return update_option( 'ssa_error_notices', $error_notices_ids );
+			$error_notices_ids[ $error_id ] = empty($params) ? true : $params;
+			$this->update_option( $error_notices_ids );
+
+			// Email SSA admin to let them know that this error ocurred
+			if ( 'google_calendar_get_events' === $error_id || 'google_calendar_get_events_for_staff' === $error_id ) {
+				$settings = $this->plugin->settings->get();
+				$schema = $this->get_schema();
+				$staff_id = empty( $params['staff_id'] ) ? 0 : (int) $params['staff_id'];
+
+				/**
+				 * Default title
+				 */
+				$title   = __( 'SSA Calendar Disconnected', 'simply-schedule-appointments' );
+				$message = $schema['google_calendar_get_events']['message'];
+
+				if ( ! empty( $staff_id ) && class_exists( 'SSA_Staff_Model' ) ) {
+					$name = SSA_Staff_Model::get_staff_name_by_id( $staff_id );
+					$title = __( 'SSA Staff Calendar Disconnected', 'simply-schedule-appointments' );
+					$message = sprintf( 
+						__( 'SSA failed to get Google Calendar events for %s. Please disconnect and reconnect Google Calendar in the settings and contact support if this error message persists.', 'simply-schedule-appointments' ), 
+						$name 
+					);
+				}
+
+				$message .= "\n\nUpdate your settings: " . $this->plugin->wp_admin->url();
+
+				$this->plugin->notifications->ssa_wp_mail(
+					$settings['global']['admin_email'],
+					$title,
+					$message
+				);				
+			}
+			
+			return true;
 		}
 
 	}
@@ -260,7 +352,7 @@ class SSA_Error_Notices {
 
 		if ( isset( $error_notices_ids[ $error_id ] ) ) {
 			unset( $error_notices_ids[ $error_id ]);
-			return update_option( 'ssa_error_notices', $error_notices_ids );
+			return $this->update_option( $error_notices_ids );
 		}
 
 	}
@@ -315,6 +407,25 @@ class SSA_Error_Notices {
 				'link'			=> '/ssa/settings/google-calendar',
 				'link_message' 	=> __( 'Go to settings', 'simply-schedule-appointments' ),
 				'callback'	=> 'check_if_gcal_enabled',
+			),
+			'google_calendar_get_events' => array(
+				'id'			=> 'google_calendar_get_events',
+				'type'			=> 'error',
+				'priority' 		=> 1,
+				'message'		=> __( 'SSA failed to get Google Calendar events. Please disconnect and reconnect Google Calendar in the settings and contact support if this error message persists.', 'simply-schedule-appointments' ),
+				'link'			=> '/ssa/settings/google-calendar',
+				'link_message' 	=> __( 'Go to settings', 'simply-schedule-appointments' ),
+				'callback'	=> 'check_if_ssa_can_get_events'
+			),
+			'google_calendar_get_events_for_staff' => array(
+				'id'			=> 'google_calendar_get_events_for_staff',
+				'type'			=> 'error',
+				'priority' 		=> 1,
+				'message'		=> __( 'SSA failed to get Google Calendar events for a staff member. Please disconnect and reconnect their Google Calendar in the Team settings and contact support if this error message persists.', 'simply-schedule-appointments' ),
+				'link'			=> '/ssa/settings/staff/all',
+				'link_message' 	=> __( 'Go to settings', 'simply-schedule-appointments' ),
+				'callback'	=> 'check_if_ssa_can_get_events',
+				'display_condition'	=> 'check_if_same_staff_or_admin'
 			),
 			'google_calendar_authentication' => array(
 				'id'			=> 'google_calendar_authentication',
@@ -421,10 +532,12 @@ class SSA_Error_Notices {
 		);
 	}
 
-	public function confirm_stripe_live_mode_active( $id = '' ) {
-		if ( empty( $id ) ) {
+	public function confirm_stripe_live_mode_active( $params = array() ) {
+		if (empty($params['id'])) {
 			return;
 		}
+	
+		$id = $params['id'];
 
 		if( ! class_exists( 'SSA_Stripe' ) || ! $this->plugin->settings_installed->is_enabled( 'stripe' ) ) {
 			$this->delete_error_notice( $id );
@@ -434,11 +547,12 @@ class SSA_Error_Notices {
 		
 	}
 	
-	public function check_for_stripe_if_enabled( $id = '' ) {
-
-		if ( empty( $id ) ) {
+	public function check_for_stripe_if_enabled( $params = array() ) {
+		if (empty($params['id'])) {
 			return;
 		}
+	
+		$id = $params['id'];
 
 		if( ! class_exists( 'SSA_Stripe' ) || ! $this->plugin->settings_installed->is_enabled( 'stripe' ) ) {
 			$this->delete_error_notice( $id );
@@ -452,17 +566,21 @@ class SSA_Error_Notices {
 	// 	// TODO
 	// }
 	
-	public function check_if_license_is_valid( $id = '' ) {
-		if ( empty( $id ) ) {
+	public function check_if_license_is_valid( $params = array() ) {
+		if (empty($params['id'])) {
 			return;
 		}
+	
+		$id = $params['id'];
+
 		$license_settings = $this->plugin->license->check();
 		if ( ! empty( $license_settings['license_status'] ) && 'valid' === $license_settings['license_status'] ) {
 			$this->delete_error_notice( $id );
 		}
 	}
 	
-	public function check_if_quick_connect_gcal_backoff_is_reset( $id = '' ) {
+	public function check_if_quick_connect_gcal_backoff_is_reset( $params = array() ) {
+		$id = empty( $params['id'] ) ? '' : $params['id'];
 		if ( empty( $id ) ) {
 			return;
 		}
@@ -477,27 +595,33 @@ class SSA_Error_Notices {
 	 * A callback to assert that Google Calendar is enabled
 	 * If it's not we delete the error passed as parameter since the error is no longer valid
 	 *
-	 * @param string $id
+	 * @param array $params
 	 * @return void
 	 */
-	public function check_if_gcal_enabled( $id = '' ) {
-		if ( empty( $id ) ) {
+	public function check_if_gcal_enabled( $params = array() ) {
+		if (empty($params['id'])) {
 			return;
 		}
+	
+		$id = $params['id'];
 
 		if( ! class_exists( 'SSA_Google_Calendar' ) || ! $this->plugin->settings_installed->is_enabled( 'google_calendar' ) ) {
 			$this->delete_error_notice( $id );
 		}
 	}
 
-	public function confirm_gcal_refresh_token_not_missing_globally( $id = '' ) {
-		if ( empty( $id ) ) return;
+	public function confirm_gcal_refresh_token_not_missing_globally( $params = array() ) {
+		if (empty($params['id'])) {
+			return;
+		}
+	
+		$id = $params['id'];
 
 		if( ! class_exists( 'SSA_Google_Calendar' ) || ! $this->plugin->settings_installed->is_enabled( 'google_calendar' ) ) {
 			$this->delete_error_notice( $id );
 		}
 		
-		if( $this->plugin->developer_settings->is_in_dev_quick_connect_gcal_mode() || $this->plugin->google_calendar_settings->is_in_quick_connect_gcal_mode() ){
+		if( $this->plugin->google_calendar_settings->is_in_quick_connect_gcal_mode() ){
 			return $this->delete_error_notice( $id );
 		}
 		
@@ -509,14 +633,18 @@ class SSA_Error_Notices {
 		
 	}
 
-	public function confirm_gcal_refresh_token_not_missing_for_team( $id = '' ) {
-		if ( empty( $id ) ) return;
+	public function confirm_gcal_refresh_token_not_missing_for_team( $params = array() ) {
+		if (empty($params['id'])) {
+			return;
+		}
+	
+		$id = $params['id'];
 
 		if( ! class_exists( 'SSA_Google_Calendar' ) || ! $this->plugin->settings_installed->is_enabled( 'google_calendar' ) ) {
 			$this->delete_error_notice( $id );
 		}
 
-		if( $this->plugin->developer_settings->is_in_dev_quick_connect_gcal_mode() || $this->plugin->google_calendar_settings->is_in_quick_connect_gcal_mode() ){
+		if( $this->plugin->google_calendar_settings->is_in_quick_connect_gcal_mode() ){
 			return $this->delete_error_notice( $id );
 		}
 		
@@ -538,7 +666,7 @@ class SSA_Error_Notices {
 			return;
 		}
 		
-		if( $this->plugin->developer_settings->is_in_dev_quick_connect_gcal_mode() || $this->plugin->google_calendar_settings->is_in_quick_connect_gcal_mode() ){
+		if( $this->plugin->google_calendar_settings->is_in_quick_connect_gcal_mode() ){
 			return;
 		}
 
@@ -561,4 +689,115 @@ class SSA_Error_Notices {
 
 	}
 
+	public function check_if_ssa_can_get_events( $params = array() ) {
+		if (empty($params['id'])) {
+			return;
+		}
+	
+		$id = $params['id'];
+
+		$staff_id = empty( $params['params']['staff_id'] ) ? 0 : (int) $params['params']['staff_id'];
+
+		if( ! class_exists( 'SSA_Google_Calendar' ) || ! $this->plugin->settings_installed->is_enabled( 'google_calendar' ) ) {
+			return $this->delete_error_notice( $id );
+		}
+		
+		// handles the case where some user disconnects, removing the access token, with the error notice still set
+		if(0 === $staff_id){
+			$google_calendar_settings = $this->plugin->google_calendar_settings->get();
+			if( empty( $google_calendar_settings['access_token'] ) ) {
+				return $this->delete_error_notice( $id );
+			}
+		} else {
+			$staff = $this->plugin->staff_model->get( $staff_id );
+			if( empty( $staff['google_access_token'] ) ) {
+				return $this->delete_error_notice( $id );
+			}
+		}
+
+		$calendar_list = $this->plugin->google_calendar->get_calendar_list( $staff_id );
+
+		if ( ! empty( $calendar_list ) ) {
+			$this->delete_error_notice( $id );
+		}
+	}
+
+	public function check_if_same_staff_or_admin( $params = array() ) {
+		if ( ! isset( $params['value']['staff_id'] ) ) {
+			return false; // We shouldn't actually end up here
+		}
+
+		if ( current_user_can( 'ssa_manage_staff' ) ) {
+			return true; // This is the admin
+		}
+
+		$user_id = get_current_user_id();
+
+		if( empty( $user_id ) ) {
+			return false;
+		}
+
+		$staff_id = $this->plugin->staff_model->get_staff_id_for_user_id( $user_id );
+
+		if( empty( $staff_id ) ) {
+			return true; // this should be the admin
+		}
+
+		if ( (int) $params['value']['staff_id'] === (int) $staff_id ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Confirms SSA can get Google calendars for staff
+	 */
+	public function confirm_ssa_gets_gcal_events () {
+		if( ! class_exists( 'SSA_Google_Calendar' ) || ! $this->plugin->settings_installed->is_enabled( 'google_calendar' ) ) {
+			return;
+		}
+
+		try 
+		{
+			$client = $this->plugin->google_calendar_client->service_init(0);
+			$calendar_list = $client->get_calendar_list();
+
+			if ( empty( $calendar_list ) ) {
+				$this->add_error_notice( 'google_calendar_get_events' );
+			}
+
+		} catch (\Throwable $th) {}
+		
+		/**
+		 * Now check for the staff
+		 */
+		if( ! class_exists( 'SSA_Staff_Model' ) || ! $this->plugin->settings_installed->is_enabled( 'staff' ) ) {
+			return;
+		}
+		
+		$all_staff = $this->plugin->staff_model->query( array(
+			'number' => -1,
+			'status' => 'publish',
+		) );
+		
+		foreach( $all_staff as $staff ){
+			if ( empty( $staff['google']['connected'] ) ) {
+				continue; // The staff member was not connected in the first place
+			}
+
+			try 
+			{
+				$client = $this->plugin->google_calendar_client->service_init($staff['id']);
+				$calendar_list = $client->get_calendar_list();
+
+				if ( empty( $calendar_list ) ) {
+					$this->add_error_notice( 'google_calendar_get_events_for_staff', [
+						"staff_id" => $staff['id'],
+					]);
+				}
+
+			} catch (\Throwable $th) {}
+		}
+	}
 }

@@ -60,7 +60,6 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	}
 	
 	public function format_multiline_customer_information( $item ) {
-		
 		if( ! isset( $item['customer_information'] ) || ! is_array( $item['customer_information'] ) ){
 			return $item;
 		}
@@ -765,19 +764,24 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		return true;
 	}
 
-	public function is_prospective_appointment_available( SSA_Appointment_Type_Object $appointment_type, DateTimeImmutable $start_date ) {
+	public function is_prospective_appointment_available( SSA_Appointment_Type_Object $appointment_type, DateTimeImmutable $start_date, $args = array() ) {
 			$period = new Period(
 				$start_date->sub( $appointment_type->get_buffered_duration_interval() ),
 				$start_date->add( $appointment_type->get_buffered_duration_interval() )
 			);
 
+			$args = shortcode_atts( array(
+				'cache_level_read'  => false, // check the database, bypass cache
+				'cache_level_write' => false, // don't cache the narrow-range query
+	
+				'excluded_appointment_ids' => array(),
+			), $args );
+
+
 			$availability_query = new SSA_Availability_Query(
 				$appointment_type,
 				$period,
-				array(
-					'cache_level_read'  => false, // check the database, bypass cache
-					'cache_level_write' => false, // don't cache the narrow-range query
-				)
+				$args
 			);
 
 			$prospective_appointment = SSA_Appointment_Factory::create(
@@ -817,8 +821,10 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 					'post_information'              => array(),
 					'customer_id'                   => 0,
 					'fetch'                         => array(),
-					'staff_ids'           			=> array(),
+					'mepr_membership'               => array(),
+					'staff_ids'               			=> array(),
 					'selected_resources'            => array(),
+					'opt_in_notifications'          => false,
 				)
 			),
 			$params
@@ -1014,7 +1020,10 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 				}
 				// if the time was changed, confirm availability
 				if( isset( $appointment->data['start_date'] ) && $appointment->data['start_date'] !== $params['start_date'] ){
-					$is_period_available = $this->is_prospective_appointment_available( $appointment_type, $start_date );
+					
+					// Make sure to exclude current appointmnent while checking availability
+					$args = array( 'excluded_appointment_ids' => array( $item_id ) );
+					$is_period_available = $this->is_prospective_appointment_available( $appointment_type, $start_date, $args );
 					if ( empty( $is_period_available ) ) {
 						return array(
 							'error' => array(
@@ -1629,6 +1638,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			$item['selected_resources'] = $this->get_selected_resources( $item['id'] );
 			$item['label_id']		        = $this->get_label_id( $item['id'] );
 			$item['rescheduling_note']  = $this->get_rescheduling_note( $item['id'] );
+			$item['meta']            	  = $this->get_metas( $item['id'] );
 		}
 
 		return $item;
@@ -1834,6 +1844,18 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		global $wpdb;
 		$date_modified_max = ssa_datetime();
 
+		// Combine past and future canceled appointments into one condition.
+		if ( isset( $params['purge_past_canceled_appointments'] ) && 'true' === $params['purge_past_canceled_appointments'] && isset( $params['purge_future_canceled_appointments'] ) && 'true' === $params['purge_future_canceled_appointments'] ) {
+			$params['purge_all_canceled_appointments'] = 'true';
+			unset( $params['purge_past_canceled_appointments'] );
+			unset( $params['purge_future_canceled_appointments'] );
+		}
+
+		// Unset past canceled if past appointments is already selected
+		if ( isset( $params['purge_past_appointments'] ) && 'true' === $params['purge_past_appointments'] && isset( $params['purge_past_canceled_appointments'] ) && 'true' === $params['purge_past_canceled_appointments'] ) {
+			unset( $params['purge_past_canceled_appointments'] );
+		}
+
 		$conditions = array();
 		if ( isset( $params['purge_abandoned_appointments'] ) && 'true' === $params['purge_abandoned_appointments'] ) {
 			$conditions[] = 'status = "abandoned"';
@@ -1841,6 +1863,18 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 
 		if ( isset( $params['purge_past_appointments'] ) && 'true' === $params['purge_past_appointments'] ) {
 			$conditions[] = $wpdb->prepare( 'end_date < %s', $date_modified_max->format( 'Y-m-d' ) );
+		}
+
+		if ( isset( $params['purge_past_appointments'] ) &&  'false' === $params['purge_abandoned_appointments'] && isset( $params['purge_past_canceled_appointments'] ) && 'true' === $params['purge_past_canceled_appointments'] ) {
+			$conditions[] = $wpdb->prepare( '(status = "canceled" AND end_date < %s)', $date_modified_max->format( 'Y-m-d' ) );
+		}
+
+		if ( isset( $params['purge_future_canceled_appointments'] ) && 'true' === $params['purge_future_canceled_appointments'] ) {
+			$conditions[] = $wpdb->prepare( '(status = "canceled" AND end_date > %s)', $date_modified_max->format( 'Y-m-d' ) );
+		}
+
+		if ( isset( $params['purge_all_canceled_appointments'] ) && 'true' === $params['purge_all_canceled_appointments'] ) {
+			$conditions[] = 'status = "canceled"';
 		}
 
 		if ( empty( $conditions ) ) {

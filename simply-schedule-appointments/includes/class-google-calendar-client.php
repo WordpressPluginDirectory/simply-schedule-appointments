@@ -52,14 +52,12 @@
 			return $this;
 		}
 		
-		$google_calendar_settings = $this->plugin->google_calendar_settings->get();
-
-		// temporary - beta - remove as gcal ssa_quick_connect feature goes out of beta testing
-		$developer_settings = $this->plugin->developer_settings->get();
+		$settings = ssa()->settings->get();
+		$google_calendar_settings = $settings['google_calendar'];
 
 		// Only initialize if we're not using the new ssa_quick_connect auth flow
 		// any method besides this one should access the client_id and client_secret directly on this class
-		if( !$google_calendar_settings['quick_connect_gcal_mode'] && !$developer_settings['quick_connect_gcal_mode'] ){
+		if( !$google_calendar_settings['quick_connect_gcal_mode'] ){
 			$this->client_id = $this->plugin->google_calendar->get_client_id();
 			$this->client_secret = $this->plugin->google_calendar->get_client_secret();
 		} else {
@@ -104,10 +102,8 @@
 		// if quick connect enabled, get quick connect access token
 		
 		$google_calendar_settings = $this->plugin->google_calendar_settings->get();
-		// temporary - beta - remove as gcal ssa_quick_connect feature goes out of beta testing
-		$developer_settings = $this->plugin->developer_settings->get();
 		
-		$google_quick_connect_gcal_mode = ( $google_calendar_settings['quick_connect_gcal_mode'] == true ) || ( $developer_settings['quick_connect_gcal_mode'] == true );
+		$google_quick_connect_gcal_mode = $google_calendar_settings['quick_connect_gcal_mode'] == true;
 		
 		if(  true == $google_quick_connect_gcal_mode ){
 			$this->authorize_with_quick_connect( $this->staff_id );
@@ -130,6 +126,11 @@
 	
 	private function authorize_with_client_id_and_secret() {
 		$access_token = $this->get_access_token_for_staff_id();
+		// throwing the exception here to avoid fatal error of accessing an offset on a non-array
+		if( empty( $access_token ) || !is_array( $access_token ) ) {
+			throw new Exception( 'Empty access token for staff id '.$this->staff_id );
+		}
+		
 		if( $this->is_access_token_expired( $access_token ) ) {
 			$this->access_token = $this->refresh_access_token( $access_token );
 			$this->update_token_in_database();
@@ -193,6 +194,10 @@
 		);
 		
 		if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) > 299 ) {
+			if( wp_remote_retrieve_response_code( $response ) == 401 ){
+				// expired token
+				return false;
+			}
 			ssa_debug_log( print_r( $response, true ), 10); // phpcs:ignore
 			throw new Exception( 'Failed to validate Google Calendar access token' );
 		}
@@ -482,6 +487,7 @@
 			$token = (array) $token;
 		}
 		
+		// if less than 300 seconds remaining, refresh the token anyways
 		$created = 0;
 		if ( isset( $token['created'] ) ) {
 			$created = $token['created'];
@@ -498,22 +504,20 @@
 					$created = $payload['iat'];
 				}
 			}
-		} else {
-			// id_token is not available, so we can't check the "iat"
-			// check using api response
-			try {
-				$valid = $this->validate_access_token( $token );
-				if( $valid ){
-					return false;
-				}
-			} catch (\Throwable $th) {
-				// we're inside of a method that only checks if the token is expired
+		}
+		
+		if( $created > 0 ){
+			$buffer = 300;
+			$expires_in = 3599;
+			// access tokens usually expire in 3599 seconds
+			if( $created + $expires_in - $buffer < time() ){
+				// consider expired to stay on the safe side
 				return true;
 			}
 		}
-
-		// If the token is set to expire in the next 30 seconds.
-		return ( $created + ( $token['expires_in'] - 30 ) ) < time();
+		
+		// invert
+		return ! $this->validate_access_token( $token );
 	}
 	
 	/**

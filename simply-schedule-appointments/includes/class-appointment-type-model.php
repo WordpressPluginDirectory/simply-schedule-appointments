@@ -211,9 +211,9 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 			$item["booking_flow_settings"] = $default_booking_flow_settings;
 		}
 
-		// If Edition is Downgraded to Basic or Plus (or using old booking app)
+		// If Edition is Downgraded to Basic or Plus
 		$developer_settings = $this->plugin->developer_settings->get();
-		if ( !empty( $developer_settings['old_booking_app'] ) ||  !$this->plugin->settings_installed->is_installed( 'booking_flows' ) ) {
+		if ( !$this->plugin->settings_installed->is_installed( 'booking_flows' ) ) {
 			$item["booking_flow_settings"] = $default_booking_flow_settings;
 			// If Booking Layout is Not Week or Month
 			if ($item['booking_layout'] !== 'week' && $item['booking_layout'] !== 'month' ) {
@@ -1204,7 +1204,13 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 				'staff_ids_all_required' => array(),
 				'staff_ids_any_required' => array(),
 				'resources_required' => array(),
+				'mepr_membership_id' => 0,
+				'user_id' => 0,
 			), $params['query_args'] );
+		}
+
+		if( isset( $params['excluded_appointment_ids'] ) ) {
+			$args['excluded_appointment_ids'] = is_array( $params['excluded_appointment_ids'] ) ? $params['excluded_appointment_ids'] : array( $params['excluded_appointment_ids'] );
 		}
 
 		if( isset( $args['staff_ids_all_required'] ) ) {
@@ -1284,6 +1290,7 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 
 		// $schedule = $appointment_type->get_schedule( $period );
 		$time_start = microtime( true );
+		$args = array_merge( $params , $args);
 		$availability_query = new SSA_Availability_Query(
 			$appointment_type,
 			$period,
@@ -1332,6 +1339,7 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 		$response = array(
 			'response_code' => 200,
 			'error' => '',
+			'message' => apply_filters('ssa/appointment_type/availability/display_message', '' ),
 			'data' => $bookable_start_datetime_strings,
 		);
 
@@ -1448,6 +1456,7 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 			
 			// should never be empty unless something failed
 			if( empty( $calendar_list ) ) {
+				$this->plugin->error_notices->add_error_notice( 'google_calendar_get_events');
 				return;
 			}
 			

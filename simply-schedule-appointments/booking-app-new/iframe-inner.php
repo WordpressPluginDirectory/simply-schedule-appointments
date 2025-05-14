@@ -4,7 +4,6 @@ $ssa = ssa();
 $ssa_settings = $ssa->settings->get();
 $ssa_settings = $ssa->settings->remove_unauthorized_settings_for_current_user( $ssa_settings, true, true );
 $ssa_appointment_types = $ssa->appointment_type_model->query( array (
-    'status' => 'publish', 
     'fetch' => array(
       'has_sms' => true,
     ),
@@ -44,11 +43,12 @@ foreach ($ssa_appointment_types as $appointment_type_key => $appointment_type) {
   }
 
   if ( ! empty( $_GET['flow'] ) && $ssa->settings_installed->is_installed( 'booking_flows' ) ) {
-    $ssa_appointment_types[$appointment_type_key]['booking_flow_settings']['booking_flow'] = esc_attr( $_GET['flow'] );
-    if ($_GET['flow'] != 'first_available' ) {
-      $ssa_appointment_types[$appointment_type_key]['booking_flow_settings']['suggest_first_available'] = false;
-    }else{
-      $ssa_appointment_types[$appointment_type_key]['booking_flow_settings']['suggest_first_available'] = true;
+    $flow = sanitize_key($_GET['flow']);
+    $ssa_appointment_types[$appointment_type_key]['booking_flow_settings']['booking_flow'] = $flow;
+    if ($flow != 'first_available' ) {
+        $ssa_appointment_types[$appointment_type_key]['booking_flow_settings']['suggest_first_available'] = false;
+    } else {
+        $ssa_appointment_types[$appointment_type_key]['booking_flow_settings']['suggest_first_available'] = true;
     }
   }
 
@@ -171,22 +171,29 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
     <link rel="alternate" type="text/xml+oembed" href="<?php echo home_url( 'wp-json/oembed/1.0/embed?url=http%3A%2F%2Fssa.dev%2Fbooking-test%2F&#038;format=xml' ); ?>" />
 
     <?php $booking_css_url = $ssa->templates->locate_template_url( 'booking-app/custom.css' ); ?>
+    <?php $booking_css_path = $ssa->templates->locate_template('booking-app/custom.css'); ?>
+    <?php $booking_css_version = file_exists($booking_css_path) ? filemtime($booking_css_path) : '1.0'; ?>
     <?php /* Apply styles from settings to view */ ?>
     <?php
       $ssa_styles = $ssa->styles_settings->get();
 
       // if we have style settings on the GET parameters, merge them with the styles settings
       $styles_params = array();
-
+	  
+	  // accent_color possible value patterns: ffffff or rgba(255,255,255,1)
       if( isset( $_GET['accent_color'] ) && ! empty( $_GET['accent_color'] ) ) {
-        $accent_color = $ssa->styles->hex_to_rgba( '#'. $_GET['accent_color'] );
+		$accent_color = ssa_sanitize_color_input( $_GET['accent_color'] );
+		$accent_color = $ssa->styles->hex_to_rgba( '#' . $accent_color );
+		
         if( $accent_color ) {
           $styles_params['accent_color'] = $accent_color;
         }
       }
 
+	  // background possible value patterns: ffffff or rgba(255,255,255,1)
       if( isset( $_GET['background'] ) && ! empty( $_GET['background'] ) ) {
-        $background = $ssa->styles->hex_to_rgba( '#'. $_GET['background'] );
+		$background = ssa_sanitize_color_input( $_GET['background'] );
+        $background = $ssa->styles->hex_to_rgba( '#' . $background );
         if( $background ) {
           $styles_params['background'] = $background;
         }
@@ -337,7 +344,7 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
       }
 
       html .ssa_booking_initial_spinner-container .ssa_booking_initial_spinner {
-        border: 4px solid var(--mdc-theme-on-primary);
+        border: 4px solid white;
         border-top-color: var(--mdc-theme-primary);
         border-radius: 50%;
         width: 40px;
@@ -391,7 +398,7 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
       <?php echo strip_tags( $ssa_styles['css'] ); ?>
     </style>
 
-    <link rel='stylesheet' id='ssa-booking-custom-css'  href='<?php echo $booking_css_url; ?>' type='text/css' media='all' />
+    <link rel='stylesheet' id='ssa-booking-custom-css' href='<?php echo esc_url($booking_css_url . '?v=' . $booking_css_version); ?>' type='text/css' media='all' />
     <?php
 
     // BEGIN: Deprecated

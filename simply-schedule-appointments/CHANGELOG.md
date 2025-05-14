@@ -1,5 +1,127 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.24 - 2025-04-29
+
+### Fixes
+
+- Improve twilio error handling
+
+## SSA-VERSION-PREFIX.6.8.22 - 2025-04-22
+
+### Fixes
+
+- Refactor revision handling: improve action validation and prevent PHP warning
+- Refactor bulk_delete call and remove unnecessary action_title check i…
+- always validate GCAL access token against API to avoid any time misconfiguration
+
+## SSA-VERSION-PREFIX.6.8.21 - 2025-04-15
+
+### Fixes
+
+- Fix ssa fails to handle stripe declined cards
+
+## SSA-VERSION-PREFIX.6.8.19 - 2025-04-09
+
+### Fixes
+
+- Stripe logo/icon missing in Stripe + SSA integration
+- Translations in the notifications are not working
+
+## SSA-VERSION-PREFIX.6.8.15 - 2025-03-26
+
+### Fixes
+
+- Fix foxy select component to pick up the pre-selected value on mount
+- Appointment Page option missing from General Settings on some hosting solutions
+- Improve error handling in the booking app
+- Improve gravity forms redirect handling
+
+### Features and Improvements
+
+- Introduce appointment no show status
+
+## SSA-VERSION-PREFIX.6.8.11 - 2025-03-11
+
+### Fixes
+
+- Fix the custom CSS input alignment with the formatted colored code preview
+- Responsive Refund Policy Field in Booking Form
+- Add display condition logic for error notices based on user roles
+
+## SSA-VERSION-PREFIX.6.8.9 - 2025-03-04
+
+### Fixes
+
+- Avoid fatal error when access token is missing but error notice was set
+
+### Features and Improvements
+
+- Introduce Opt-in to receiving notifications option on booking
+
+## SSA-VERSION-PREFIX.6.8.7 - 2025-02-25
+
+### Fixes
+
+- Fix error while booking identical resources with individual and group capacity
+- Enhance accessibility by adding aria-hidden span for day date in Day.vue
+- Add snackbar notification for dev settings save confirmation
+- UI bug with Booking Flow dropdown - overlap issues
+- Refactor receipt email handling in Stripe payment arguments
+- Translate default customer information keys
+- Ticket: 1.6.8.3 - Unauthenticated Arbitrary Shortcode Execution
+- Ticket: Duplicate Queries getting created by the SSA Plugin
+- Missing slots when going backwards after switching selected team member
+- Follow every CSS comment with new lines to keep CSS valid
+
+### Features and Improvements
+
+- Add huf currency
+- Quick connect UX/UI
+
+## SSA-VERSION-PREFIX.6.8.5 - 2025-02-04
+
+### Fixes
+
+- Add more input sanitization around iframe URL params
+- Fix Skipping Feb in Monthly View
+
+## SSA-VERSION-PREFIX.6.8.3 - 2025-01-28
+
+### Fixes
+
+- Refactor CSS for toggle input containers and checkboxes for improved …
+- Remove exception throwing in get calendar list
+
+## SSA-VERSION-PREFIX.6.8.1 - 2025-01-15
+
+### Fixes
+
+- Blackout dates update date selection behavior for staff
+- Support zoomed in booking view on mobile
+- Fix gravity form redirect issue with ssa
+- Fully drop the old booking app
+
+## SSA-VERSION-PREFIX.6.7.78 - 2024-12-24
+
+### Fixes
+
+- PHP notices around loading text domain with WordPress 6.7
+
+## SSA-VERSION-PREFIX.6.7.74 - 2024-12-10
+
+### Fixes
+
+- Fix refund policy input validation
+- Take REQUEST_SCHEME into consideration to detect SSL
+- Resource booking not working as expected
+
+## SSA-VERSION-PREFIX.6.7.72 - 2024-12-03
+
+### Fixes
+
+- Make SSA aware of what payment methods are enabled in Stripe
+- Deleted appointment types not being fetched
+
 ## SSA-VERSION-PREFIX.6.7.70 - 2024-11-26
 
 ### Fixes

@@ -541,11 +541,6 @@
         'help' => __( 'Connect your Google Calendar without creating your own Google Cloud Platform project. Requires an active plugin license.', 'simply-schedule-appointments' ),
         'warning' => __( 'This is only available when SSA is not connected to Google Calendar. After toggling this setting, you will need to reconnect your main Google Calendar, and the team member calendars.', 'simply-schedule-appointments' ),
       ),
-      'old_booking_app' => 
-      array (
-        'label' => __( 'Use the old booking app', 'simply-schedule-appointments' ),
-        'help' => __( 'The old booking app has been deprecated since early 2024. It will be fully removed from the plugin on November 1st 2024, but is available until then if needed.', 'simply-schedule-appointments' ),
-      ),
       'display_appointment_revisions' => 
       array (
         'label' => __( 'Appointments Revisions', 'simply-schedule-appointments' ),
@@ -577,8 +572,10 @@
           'action' => __( 'Purge now', 'simply-schedule-appointments' ),
           'settings' => 
           array (
-            'past_appointments' => __( 'Purge past Appointments', 'simply-schedule-appointments' ),
-            'abandoned_appointments' => __( 'Purge abandoned Appointments', 'simply-schedule-appointments' ),
+            'past_appointments' => __( 'Past Appointments', 'simply-schedule-appointments' ),
+            'abandoned_appointments' => __( 'Abandoned Appointments', 'simply-schedule-appointments' ),
+            'past_canceled_appointments' => __( 'Past Canceled Appointments', 'simply-schedule-appointments' ),
+            'future_canceled_appointments' => __( 'Future Canceled Appointments', 'simply-schedule-appointments' ),
           ),
           'modal' => 
           array (
@@ -665,6 +662,8 @@
       'authorize' => __( 'Authorize', 'simply-schedule-appointments' ),
       'googleAuthorize' => __( 'Sign in with Google', 'simply-schedule-appointments' ),
       'quickConnectRequiresLicense' => __( 'SSA Quick Connect requires an active license.', 'simply-schedule-appointments' ),
+      'manualSetup' => __( 'Or setup credentials manually', 'simply-schedule-appointments' ),
+      'quickConnectSetup' => __( 'or connect to Google Calendar with SSA Quick Connect', 'simply-schedule-appointments' ),
       'cloudAuthorize' => __( 'Authorize with SSA Quick Connect', 'simply-schedule-appointments' ),
       'saveAuthorize' => __( 'Save and Authorize', 'simply-schedule-appointments' ),
       'clientSecret' => __( 'Client Secret', 'simply-schedule-appointments' ),
@@ -840,20 +839,21 @@
         'publishableKeyHelp' => __( 'Get your API keys from your Stripe account.', 'simply-schedule-appointments' ),
         'secretKey' => __( 'Secret key', 'simply-schedule-appointments' ),
         'secretKeyHelp' => __( 'Get your API keys from your Stripe account.', 'simply-schedule-appointments' ),
-        'webhook' => __( 'Stripe Webhook URL', 'simply-schedule-appointments' ),
+        'webhook' => __( 'Stripe Webhook / Event Destination URL', 'simply-schedule-appointments' ),
         'webhookHelpPrefix' => __( 'You must add this URL to', 'simply-schedule-appointments' ),
-        'webhookHelpTarget' => __( 'your Stripe account Webhook settings', 'simply-schedule-appointments' ),
-        'webhookCopied' => __( 'The webhook has been copied to your clipboard', 'simply-schedule-appointments' ),
-        'webhookSecret' => __( 'Webhook Signing Secret', 'simply-schedule-appointments' ),
+        'webhookHelpTarget' => __( 'your Stripe account Webhook / Event Destination settings', 'simply-schedule-appointments' ),
+        'webhookCopied' => __( 'The webhook / event destination URL has been copied to your clipboard', 'simply-schedule-appointments' ),
+        'webhookSecret' => __( 'Webhook / Event Destination Signing Secret', 'simply-schedule-appointments' ),
         'webhookSecretHelpPrefix' => __( 'Get your signing secret from', 'simply-schedule-appointments' ),
         'paymentMethods' => __( 'Payment Methods', 'simply-schedule-appointments' ),
+        'paymentMethodsHelp' => __( 'Make sure to enable the selected payment methods in your Stripe default payment method configuration.', 'simply-schedule-appointments' ),
         'testMode' => __( 'Enable test mode', 'simply-schedule-appointments' ),
         'testModeHelp' => __( 'Place the payment gateway in test mode using test API keys.', 'simply-schedule-appointments' ),
         'testPublishableKey' => __( 'Test publishable key', 'simply-schedule-appointments' ),
         'testPublishableKeyHelp' => __( 'Get your API keys from your Stripe account.', 'simply-schedule-appointments' ),
         'testSecretKey' => __( 'Test secret key', 'simply-schedule-appointments' ),
         'testSecretKeyHelp' => __( 'Get your API keys from your Stripe account.', 'simply-schedule-appointments' ),
-        'testWebhookSecret' => __( 'Test Webhook Signing Secret', 'simply-schedule-appointments' ),
+        'testWebhookSecret' => __( 'Test Webhook / Event Destination Signing Secret', 'simply-schedule-appointments' ),
         'noConnection' => __( 'Stripe is not connected to your Stripe account', 'simply-schedule-appointments' ),
         'testModeWarning' => __( 'Stripe is in test mode.', 'simply-schedule-appointments' ),
       ),
@@ -872,6 +872,24 @@
         'addNew' => __( 'Add a new notification', 'simply-schedule-appointments' ),
         'edit' => __( 'Edit notification', 'simply-schedule-appointments' ),
         'editAll' => __( 'Edit notifications', 'simply-schedule-appointments' ),
+      ),
+      'selected' => __( 'Notifications Selected', 'simply-schedule-appointments' ),
+      'optinSettings' => 
+      array (
+        'title' => __( 'Notification Opt-In', 'simply-schedule-appointments' ),
+        'description' => __( 'Enable this option to let customers choose whether they want to receive notifications for their appointments.', 'simply-schedule-appointments' ),
+        'enabled' => __( 'Enabled', 'simply-schedule-appointments' ),
+        'explanation' => __( 'Set the text that will be displayed to customers when they book an appointment. The label appears next to the checkbox, and the description provides additional details.', 'simply-schedule-appointments' ),
+        'labelField' => 
+        array (
+          'label' => __( 'Checkbox Label (required)', 'simply-schedule-appointments' ),
+          'helptext' => __( 'This is the label that will be displayed next to the checkbox.', 'simply-schedule-appointments' ),
+        ),
+        'descriptionField' => 
+        array (
+          'label' => __( 'Checkbox Description', 'simply-schedule-appointments' ),
+          'helptext' => __( 'This text will be displayed below the checkbox.', 'simply-schedule-appointments' ),
+        ),
       ),
       'fields' => 
       array (
@@ -948,6 +966,7 @@
         'canceled_by_name' => __( 'The name of the user who canceled the appointment', 'simply-schedule-appointments' ),
         'rescheduling_note' => __( 'An optional note added when rescheduling the appointment', 'simply-schedule-appointments' ),
         'rescheduled_by_name' => __( 'The name of the user who rescheduled the appointment', 'simply-schedule-appointments' ),
+        'mepr_membership_title' => __( 'MemberPress Integration: the membership the appointment is booked under.', 'simply-schedule-appointments' ),
         'Appointment.customer_prev_start_date' => __( 'The previous start date of an appointment that has been rescheduled, in the customer\'s timezone', 'simply-schedule-appointments' ),
         'Appointment.customer_prev_start_dates' => __( 'List of previous start dates of an appointment that has been rescheduled, in the customer\'s timezone', 'simply-schedule-appointments' ),
         'Appointment.business_prev_start_date' => __( 'The previous start date of an appointment that has been rescheduled, in the business timezone', 'simply-schedule-appointments' ),
@@ -976,6 +995,7 @@
       'warnings' => 
       array (
         'cronWarning' => __( 'This notification might be delayed or not sent as expected.', 'simply-schedule-appointments' ),
+        'cronWarningNoShow' => __( 'This notification will be canceled in the event of a no-show.', 'simply-schedule-appointments' ),
         'cronLinkText' => __( 'More details', 'simply-schedule-appointments' ),
       ),
       'when' => 
@@ -1613,6 +1633,7 @@
     'required' => __( 'Require', 'simply-schedule-appointments' ),
     'confirmDelete' => __( 'Delete this appointment type?', 'simply-schedule-appointments' ),
     'confirmDeleteAppointments' => __( 'The following appointments of this type are booked:', 'simply-schedule-appointments' ),
+    'deleteTypeWithMembershipsWarn' => __( 'This appointment type is associated with active membership(s). Please note that users will still be able to access their existing appointments but cannot schedule new ones under the following memberships.', 'simply-schedule-appointments' ),
     'confirmDeleteOk' => __( 'Delete', 'simply-schedule-appointments' ),
     'confirmDeleteCancel' => __( 'Keep', 'simply-schedule-appointments' ),
     'appointmentSync' => __( 'Add new appointments to this calendar', 'simply-schedule-appointments' ),
@@ -1843,6 +1864,7 @@
     'book' => __( 'Mark as booked', 'simply-schedule-appointments' ),
     'past' => __( 'Past Appointments', 'simply-schedule-appointments' ),
     'rescheduled' => __( 'Rescheduled', 'simply-schedule-appointments' ),
+    'markAsNoShow' => __( 'Mark as no-show', 'simply-schedule-appointments' ),
     'upcoming' => __( 'Upcoming Appointments', 'simply-schedule-appointments' ),
     'dateRange' => __( 'Date Range', 'simply-schedule-appointments' ),
     'viewOriginal' => __( 'Original date/time', 'simply-schedule-appointments' ),
@@ -1864,6 +1886,7 @@
     'cancelationNote' => __( 'Cancelation note', 'simply-schedule-appointments' ),
     'changeStatusTitle' => __( 'Change the status for this appointment.', 'simply-schedule-appointments' ),
     'changeToBooked' => __( 'Marking this appointment booked will reserve the time slot and send any notifications you have set up.', 'simply-schedule-appointments' ),
+    'changeToNoShow' => __( 'Marking this appointment as a no-show cannot be undone.', 'simply-schedule-appointments' ),
     'changeToCanceled' => __( 'Marking this appointment canceled will release the time slot and send any notifications you have set up.', 'simply-schedule-appointments' ),
     'changeToAbandoned' => __( 'Marking this appointment abandoned will release this slot from being reserved and make it available for others to book again.', 'simply-schedule-appointments' ),
     'loadingSettings' => __( 'Loading settings', 'simply-schedule-appointments' ),
@@ -1884,6 +1907,10 @@
     'deleteConfirmExplanationCancelable' => __( 'Your customer will not receive any notification that the appointment was deleted. If you would like your customer to receive a notification of a canceled appointment, please cancel the appointment before deleting it.', 'simply-schedule-appointments' ),
     'deletedType' => __( 'Deleted appointment type', 'simply-schedule-appointments' ),
     'deletingSingle' => __( 'Deleting appointment', 'simply-schedule-appointments' ),
+    'removeNoShowStatusConfirm' => __( 'Remove no-show status?', 'simply-schedule-appointments' ),
+    'removeNoShowStatusConfirmExplanation' => __( 'This will remove the no-show status from this appointment and make it available for booking again.', 'simply-schedule-appointments' ),
+    'cancelRemoveNoShowStatusCancel' => __( 'Keep status', 'simply-schedule-appointments' ),
+    'cancelRemoveNoShowStatusOk' => __( 'Remove status', 'simply-schedule-appointments' ),
     'loadingSingle' => __( 'Getting your appointment details', 'simply-schedule-appointments' ),
     'viewDetails' => __( 'View appointment details', 'simply-schedule-appointments' ),
     'appointmentDetails' => __( 'Appointment Details', 'simply-schedule-appointments' ),
@@ -1939,6 +1966,13 @@
       'pending_payment' => __( 'Pending Payment', 'simply-schedule-appointments' ),
       'canceled' => __( 'Canceled', 'simply-schedule-appointments' ),
       'abandoned' => __( 'Abandoned', 'simply-schedule-appointments' ),
+      'no_show' => __( 'No Show', 'simply-schedule-appointments' ),
+      'updating' => __( 'Updating', 'simply-schedule-appointments' ),
+    ),
+    'statusesMeta' => 
+    array (
+      'no_show' => __( 'No Show', 'simply-schedule-appointments' ),
+      'no_show_reverted' => __( 'No Show Reverted', 'simply-schedule-appointments' ),
     ),
     'actions' => 
     array (
@@ -1955,6 +1989,8 @@
       'assigned' => __( 'Assigned', 'simply-schedule-appointments' ),
       'notification_scheduled' => __( 'Notification Scheduled', 'simply-schedule-appointments' ),
       'notification_sent' => __( 'Notification Sent', 'simply-schedule-appointments' ),
+      'reminder' => __( 'Reminder', 'simply-schedule-appointments' ),
+      'notification_canceled' => __( 'Notification Canceled', 'simply-schedule-appointments' ),
       'notification_not_sent' => __( 'Notification Not Sent', 'simply-schedule-appointments' ),
       'publish' => __( 'Created', 'simply-schedule-appointments' ),
       'delete' => __( 'Deleted', 'simply-schedule-appointments' ),
@@ -2221,6 +2257,8 @@
       'assigned' => __( 'Assigned', 'simply-schedule-appointments' ),
       'notification_scheduled' => __( 'Notification Scheduled', 'simply-schedule-appointments' ),
       'notification_sent' => __( 'Notification Sent', 'simply-schedule-appointments' ),
+      'reminder' => __( 'Reminder', 'simply-schedule-appointments' ),
+      'notification_canceled' => __( 'Notification Canceled', 'simply-schedule-appointments' ),
       'notification_not_sent' => __( 'Notification Not Sent', 'simply-schedule-appointments' ),
       'publish' => __( 'Created', 'simply-schedule-appointments' ),
       'delete' => __( 'Deleted', 'simply-schedule-appointments' ),
@@ -2252,6 +2290,9 @@
       'booking_start_date_changed' => __( 'Booking start Date', 'simply-schedule-appointments' ),
       'mailchimp_changed' => __( 'Mailchimp', 'simply-schedule-appointments' ),
       'reminder_not_sent' => __( 'Notification Not Sent', 'simply-schedule-appointments' ),
+      'no_show' => __( 'No Show', 'simply-schedule-appointments' ),
+      'no_show_reverted' => __( 'No Show Reverted', 'simply-schedule-appointments' ),
+      'opt_out_notification' => __( 'Opt Out Notification', 'simply-schedule-appointments' ),
     ),
   ),
 );
